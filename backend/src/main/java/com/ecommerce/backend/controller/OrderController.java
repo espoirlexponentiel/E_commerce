@@ -28,15 +28,15 @@ public class OrderController {
     public ResponseEntity<?> placeOrder(@AuthenticationPrincipal User user) {
         if (user == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                .body(Map.of("error", "Connexion requise pour passer une commande"));
+                    .body(Map.of("error", "Connexion requise pour passer une commande"));
         }
 
-        Order order = orderService.placeOrder(user);
-        return ResponseEntity.ok(Map.of(
-            "orderId", order.getId(),
-            "status", order.getStatus(),
-            "totalAmount", order.getTotalAmount()
-        ));
+        try {
+            Map<String, Object> orderResponse = orderService.placeOrder(user);
+            return ResponseEntity.ok(orderResponse);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
     }
 
     // 👤 Voir ses propres commandes
@@ -44,7 +44,7 @@ public class OrderController {
     public ResponseEntity<?> getUserOrders(@AuthenticationPrincipal User user) {
         if (user == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                .body(Map.of("error", "Connexion requise"));
+                    .body(Map.of("error", "Connexion requise"));
         }
 
         List<Order> orders = orderService.getOrdersByUser(user);
@@ -57,20 +57,25 @@ public class OrderController {
     public ResponseEntity<?> getAllOrders() {
         List<Order> orders = orderService.getAllOrders();
         List<OrderSummaryDTO> summaries = orders.stream()
-            .map(OrderSummaryDTO::new)
-            .toList();
+                .map(OrderSummaryDTO::new)
+                .toList();
         return ResponseEntity.ok(summaries);
     }
-
 
     // 🔄 Modifier le statut d’une commande (admin)
     @PutMapping("/admin/{orderId}/status")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> updateOrderStatus(@PathVariable Long orderId,
-                                               @RequestBody Map<String, String> payload) {
-        String status = payload.get("status");
-        orderService.updateOrderStatus(orderId, OrderStatus.valueOf(status));
-        return ResponseEntity.ok(Map.of("message", "Statut mis à jour"));
+                                               @RequestParam String status) {
+        try {
+            OrderStatus newStatus = OrderStatus.valueOf(status.toUpperCase()); // ✅ force majuscules
+            orderService.updateOrderStatus(orderId, newStatus);
+            return ResponseEntity.ok(Map.of("message", "Statut mis à jour"));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Statut invalide : " + status));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", e.getMessage()));
+        }
     }
 
     // ❌ Annuler une commande (user, < 10 min)
@@ -78,12 +83,16 @@ public class OrderController {
     @PreAuthorize("hasRole('USER')")
     public ResponseEntity<?> cancelOrder(@AuthenticationPrincipal User user,
                                          @PathVariable Long orderId) {
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "Connexion requise"));
+        }
+
         try {
             orderService.cancelOrder(user, orderId);
             return ResponseEntity.ok(Map.of("message", "Commande annulée"));
         } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                .body(Map.of("error", e.getMessage()));
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
 }

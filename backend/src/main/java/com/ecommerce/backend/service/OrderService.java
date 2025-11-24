@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -21,7 +22,7 @@ public class OrderService {
 
     // 🛒 Transformer le panier en commande
     @Transactional
-    public Order placeOrder(User user) {
+    public Map<String, Object> placeOrder(User user) {
         List<CartItem> cartItems = cartService.getCartItems(user);
 
         if (cartItems.isEmpty()) {
@@ -47,6 +48,7 @@ public class OrderService {
 
         order = orderRepository.save(order);
 
+        // ✅ Créer les OrderItem et décrémenter le stock
         for (CartItem item : cartItems) {
             Product product = item.getProduct();
             product.setStock(product.getStock() - item.getQuantity());
@@ -63,7 +65,15 @@ public class OrderService {
         }
 
         cartService.clearCart(user); // ✅ panier vidé proprement
-        return order;
+
+        // ✅ Réponse enrichie pour le frontend
+        return Map.of(
+                "orderId", order.getId(),
+                "status", order.getStatus(),
+                "totalAmount", order.getTotalAmount(),
+                "createdAt", order.getCreatedAt(),
+                "items", orderItemRepository.findByOrder(order)
+        );
     }
 
     // 👤 Voir les commandes d’un utilisateur
@@ -99,6 +109,14 @@ public class OrderService {
         Duration duration = Duration.between(order.getCreatedAt(), LocalDateTime.now());
         if (duration.toMinutes() > 10) {
             throw new RuntimeException("Impossible d'annuler après 10 minutes");
+        }
+
+        // ✅ Restaurer le stock
+        List<OrderItem> orderItems = orderItemRepository.findByOrder(order);
+        for (OrderItem item : orderItems) {
+            Product product = item.getProduct();
+            product.setStock(product.getStock() + item.getQuantity());
+            productRepository.save(product);
         }
 
         order.setStatus(OrderStatus.ANNULEE);

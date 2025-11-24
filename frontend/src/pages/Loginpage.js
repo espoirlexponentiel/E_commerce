@@ -10,23 +10,29 @@ export default function LoginPage() {
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
+      // 🔓 Connexion
       const res = await axios.post("/users/login", { email, password });
 
       const token = res.data.token;
-      const role = res.data.role;
-
       localStorage.setItem("token", token);
-      localStorage.setItem("role", role);
-      console.log("Rôle reçu :", res.data.role);
 
+      // 🔐 Récupérer l'utilisateur connecté via /me
+      const me = await axios.get("/users/me", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      const role = me.data.role?.toUpperCase(); // ✅ force majuscules
+      localStorage.setItem("role", role);
+      console.log("Rôle reçu :", role);
 
       // ✅ Redirection selon le rôle
       if (role === "ADMIN") {
-        navigate("/admin/commandes");
+        navigate("/commandes");
       } else {
         navigate("/categories");
       }
     } catch (err) {
+      console.error("Erreur login :", err);
       alert("❌ Erreur de connexion");
     }
   };

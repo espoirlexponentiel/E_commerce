@@ -1,8 +1,10 @@
 package com.ecommerce.backend.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -24,6 +26,6 @@ public class Cart {
 
     // 📦 Liste des articles dans le panier
     @OneToMany(mappedBy = "cart", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<CartItem> items;
+    @JsonIgnoreProperties("cart")
+    private List<CartItem> items = new ArrayList<>();
 }
-

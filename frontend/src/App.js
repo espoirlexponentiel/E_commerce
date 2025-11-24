@@ -4,6 +4,9 @@ import LoginPage from "./pages/Loginpage";
 import RegisterPage from "./pages/Registerpage";
 import CategoriesPage from "./pages/CategoriesPage";
 import AdminCommandesPage from "./pages/AdminCommandesPage";
+import ProductPage from "./pages/ProductPage";
+import CartPage from "./pages/CartPage";
+import OrdersPage from "./pages/OrdersPage";
 
 
 function App() {
@@ -14,7 +17,10 @@ function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/categories" element={<CategoriesPage />} />
-        <Route path="/admin/commandes" element={<AdminCommandesPage />} />
+        <Route path="/commandes" element={<AdminCommandesPage />} />
+        <Route path="/product/:id" element={<ProductPage />} />
+        <Route path="/cart" element={<CartPage />} />
+        <Route path="/orders" element={<OrdersPage />} />
       </Routes>
     </Router>
   );

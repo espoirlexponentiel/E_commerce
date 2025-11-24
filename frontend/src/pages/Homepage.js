@@ -8,22 +8,31 @@ export default function HomePage() {
   useEffect(() => {
     axios.get("/products")
       .then(res => setProducts(res.data))
-      .catch(err => console.error("Erreur chargement produits", err));
+      .catch(err => console.error("Erreur chargement produits :", err));
   }, []);
 
   return (
-    <div>
+    <div style={{ padding: "20px" }}>
       <h1>Bienvenue sur notre boutique 🛍️</h1>
 
       <div style={{ display: "flex", flexWrap: "wrap", gap: "20px" }}>
         {products.map(product => (
-          <div key={product.id} style={{ border: "1px solid #ccc", padding: "10px", width: "200px" }}>
-            <img src={product.imageUrl} alt={product.nom} style={{ width: "100%" }} />
+          <div 
+            key={product.id} 
+            style={{ border: "1px solid #ccc", padding: "10px", width: "220px", textAlign: "center" }}
+          >
+            <img 
+              src={product.imageUrl} 
+              alt={product.nom} 
+              style={{ width: "100%", height: "150px", objectFit: "cover" }} 
+            />
             <h3>{product.nom}</h3>
             <p>{product.description}</p>
             <p><strong>{product.prix} FCFA</strong></p>
+
+            {/* ✅ Lien vers ProductPage */}
             <Link to={`/product/${product.id}`}>
-              <button>Voir</button>
+              <button style={{ marginTop: "10px" }}>Voir</button>
             </Link>
           </div>
         ))}

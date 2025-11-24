@@ -33,7 +33,7 @@ public class UserController {
             User savedUser = userService.registerUser(user);
             return ResponseEntity.ok(savedUser);
         } catch (RuntimeException e) {
-         System.out.println("Erreur : " + e.getMessage());
+            System.out.println("Erreur : " + e.getMessage());
             return ResponseEntity.status(HttpStatus.CONFLICT)
                     .body(Map.of("error", e.getMessage()));
         } catch (Exception e) {
@@ -42,7 +42,6 @@ public class UserController {
                     .body(Map.of("error", "Erreur d'inscription"));
         }
     }
-
 
     // 🔓 Connexion classique + génération du token JWT
     @PostMapping("/login")
@@ -58,12 +57,14 @@ public class UserController {
             }
 
             if (userService.checkPassword(user.getPassword(), existingUser.getPassword())) {
-                String token = jwtUtil.generateToken(existingUser.getUsername(), existingUser.getRole());
+                // ✅ subject = email
+                String token = jwtUtil.generateToken(existingUser.getEmail(), existingUser.getRole());
 
                 Map<String, String> response = new HashMap<>();
                 response.put("token", token);
                 response.put("username", existingUser.getUsername());
                 response.put("email", existingUser.getEmail());
+                response.put("role", existingUser.getRole()); // ✅ ajoute le rôle
 
                 return ResponseEntity.ok(response);
             }
@@ -76,8 +77,8 @@ public class UserController {
     // 🔐 Récupérer l'utilisateur connecté
     @GetMapping("/me")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<?> getCurrentUser(@AuthenticationPrincipal(expression = "username") String username) {
-        Optional<User> user = userService.findByUsername(username);
+    public ResponseEntity<?> getCurrentUser(@AuthenticationPrincipal(expression = "username") String email) {
+        Optional<User> user = userService.findByEmail(email); // ✅ cohérent avec subject=email
         return user.map(u -> ResponseEntity.ok(Map.of(
                 "username", u.getUsername(),
                 "email", u.getEmail(),
@@ -106,7 +107,8 @@ public class UserController {
             user = existingUser.get();
         }
 
-        String token = jwtUtil.generateToken(user.getUsername(), user.getRole());
+        // ✅ subject = email
+        String token = jwtUtil.generateToken(user.getEmail(), user.getRole());
 
         return "<html><body style='font-family:sans-serif; padding:2rem'>" +
                "<h2>Connexion Google réussie ✅</h2>" +

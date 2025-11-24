@@ -1,5 +1,6 @@
 package com.ecommerce.backend.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -23,6 +24,7 @@ public class CartItem {
     // 🔗 Panier associé
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "cart_id", nullable = false)
+    @JsonIgnoreProperties("items")
     private Cart cart;
 
     // 📦 Quantité demandée

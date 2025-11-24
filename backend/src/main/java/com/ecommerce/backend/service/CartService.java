@@ -2,9 +2,9 @@ package com.ecommerce.backend.service;
 
 import com.ecommerce.backend.entity.*;
 import com.ecommerce.backend.repository.*;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional; // ✅ Spring Transactional
 
 import java.util.List;
 
@@ -15,31 +15,46 @@ public class CartService {
     private final CartRepository cartRepository;
     private final CartItemRepository cartItemRepository;
     private final ProductRepository productRepository;
-    private final UserRepository userRepository;
 
-    // 🔄 Récupérer ou créer le panier de l'utilisateur
     public Cart getOrCreateCart(User user) {
         return cartRepository.findByUser(user)
-                .orElseGet(() -> cartRepository.save(Cart.builder().user(user).build()));
+                .orElseGet(() -> cartRepository.save(
+                        Cart.builder()
+                            .user(user)
+                            .items(new java.util.ArrayList<>())
+                            .build()
+                ));
     }
 
-    // ➕ Ajouter un produit au panier
     @Transactional
     public void addToCart(User user, Long productId, int quantity) {
+        if (quantity <= 0) throw new RuntimeException("La quantité doit être supérieure à zéro");
+
         Cart cart = getOrCreateCart(user);
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new RuntimeException("Produit introuvable"));
 
-        CartItem item = cartItemRepository.findByCartAndProduct(cart, product)
-                .orElse(CartItem.builder().cart(cart).product(product).quantity(0).build());
+        CartItem item = cartItemRepository.findByCartAndProduct(cart, product).orElse(null);
 
-        item.setQuantity(item.getQuantity() + quantity);
-        cartItemRepository.save(item);
+        if (item != null) {
+            item.setQuantity(item.getQuantity() + quantity);
+        } else {
+            item = CartItem.builder()
+                    .cart(cart)
+                    .product(product)
+                    .quantity(quantity)
+                    .build();
+            cart.getItems().add(item);
+        }
+
+        cartItemRepository.saveAndFlush(item);
+        cartRepository.saveAndFlush(cart);
     }
 
-    // ✏️ Modifier la quantité
     @Transactional
     public void updateQuantity(User user, Long productId, int quantity) {
+        if (quantity <= 0) throw new RuntimeException("La quantité doit être supérieure à zéro");
+
         Cart cart = getOrCreateCart(user);
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new RuntimeException("Produit introuvable"));
@@ -48,10 +63,9 @@ public class CartService {
                 .orElseThrow(() -> new RuntimeException("Article non trouvé dans le panier"));
 
         item.setQuantity(quantity);
-        cartItemRepository.save(item);
+        cartItemRepository.saveAndFlush(item);
     }
 
-    // ❌ Supprimer un article
     @Transactional
     public void removeFromCart(User user, Long productId) {
         Cart cart = getOrCreateCart(user);
@@ -62,18 +76,19 @@ public class CartService {
                 .orElseThrow(() -> new RuntimeException("Article non trouvé dans le panier"));
 
         cartItemRepository.delete(item);
+        cartRepository.saveAndFlush(cart);
     }
 
-    // 📦 Voir le contenu du panier
     public List<CartItem> getCartItems(User user) {
         Cart cart = getOrCreateCart(user);
         return cartItemRepository.findByCart(cart);
     }
 
-    // 🧹 Vider le panier
     @Transactional
     public void clearCart(User user) {
         Cart cart = getOrCreateCart(user);
-        cartItemRepository.deleteAllByCart(cart); // ✅ méthode dédiée
+        cartItemRepository.deleteAllByCart(cart);
+        cart.getItems().clear();
+        cartRepository.saveAndFlush(cart);
     }
 }
