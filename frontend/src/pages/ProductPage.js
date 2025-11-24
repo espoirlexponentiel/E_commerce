@@ -40,7 +40,7 @@ export default function ProductPage() {
   return (
     <div style={{ padding: "20px" }}>
       <h2>{product.nom}</h2>
-      <img src={product.imageUrl} alt={product.nom} style={{ width: "300px" }} />
+      <img src={product.imageUrl} alt={product.nom} style={{ maxWidth: "200px" }} />
       <p>{product.description}</p>
       <p><strong>{product.prix} FCFA</strong></p>
       <p>Stock disponible : {product.stock}</p>

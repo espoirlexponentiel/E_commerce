@@ -2,17 +2,19 @@ package com.ecommerce.backend.service;
 
 import com.ecommerce.backend.entity.Product;
 import com.ecommerce.backend.repository.ProductRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import jakarta.persistence.EntityNotFoundException;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
 
 @Service
+@RequiredArgsConstructor
 public class ProductService {
 
-    @Autowired
-    private ProductRepository productRepository;
+    private final ProductRepository productRepository;
 
     // 🔹 Récupérer tous les produits
     public List<Product> getAllProducts() {
@@ -21,7 +23,9 @@ public class ProductService {
 
     // 🔹 Récupérer les produits par nom de catégorie (insensible à la casse)
     public List<Product> getProductsByCategory(String nomCategorie) {
-        if (nomCategorie == null || nomCategorie.isBlank()) return List.of();
+        if (nomCategorie == null || nomCategorie.isBlank()) {
+            return List.of();
+        }
         String normalized = nomCategorie.trim().toLowerCase();
         return productRepository.findByCategoryNomIgnoreCase(normalized);
     }
@@ -32,19 +36,22 @@ public class ProductService {
     }
 
     // 🔹 Créer un nouveau produit
+    @Transactional
     public Product createProduct(Product product) {
         return productRepository.save(product);
     }
 
     // 🔹 Supprimer un produit par ID (avec vérification)
+    @Transactional
     public void deleteProduct(Long id) {
         if (!productRepository.existsById(id)) {
-            throw new IllegalArgumentException("Produit introuvable avec l'ID : " + id);
+            throw new EntityNotFoundException("Produit introuvable avec l'ID : " + id);
         }
         productRepository.deleteById(id);
     }
 
     // 🔹 Mettre à jour un produit existant
+    @Transactional
     public Product updateProduct(Long id, Product updatedProduct) {
         return productRepository.findById(id)
                 .map(existing -> {
@@ -56,6 +63,6 @@ public class ProductService {
                     existing.setCategory(updatedProduct.getCategory());
                     return productRepository.save(existing);
                 })
-                .orElseThrow(() -> new IllegalArgumentException("Produit introuvable avec l'ID : " + id));
+                .orElseThrow(() -> new EntityNotFoundException("Produit introuvable avec l'ID : " + id));
     }
 }

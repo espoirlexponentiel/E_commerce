@@ -21,11 +21,8 @@ export default function HomePage() {
             key={product.id} 
             style={{ border: "1px solid #ccc", padding: "10px", width: "220px", textAlign: "center" }}
           >
-            <img 
-              src={product.imageUrl} 
-              alt={product.nom} 
-              style={{ width: "100%", height: "150px", objectFit: "cover" }} 
-            />
+          <img src={product.imageUrl} alt={product.nom} style={{ maxWidth: "200px" }} />
+
             <h3>{product.nom}</h3>
             <p>{product.description}</p>
             <p><strong>{product.prix} FCFA</strong></p>
